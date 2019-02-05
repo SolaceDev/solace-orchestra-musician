@@ -2,8 +2,10 @@
 // (runtime-only or standalone) has been set in webpack.base.conf with an alias.
 import Vue from 'vue'
 import App from './App'
+import VueTouch from "vue-touch"
 
 Vue.config.productionTip = false
+Vue.use(VueTouch, {name: "v-touch"})
 
 /* eslint-disable no-new */
 new Vue({

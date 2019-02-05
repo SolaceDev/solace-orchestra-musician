@@ -1,17 +1,17 @@
 <template>
-	<div id="score" class="flex">
-		<div class="flex">
-			<span class="instrument">Current Instrument</span>
+	<div id="score" class="flex-row">
+		<div class="flex-row">
+			<img src="static/solace.png">
 		</div>
-		<div class="flex">
+		<div class="score-item flex-row">
 			<label>Hits</label>
 			<span class="value">{{hits}}</span>
 		</div>
-		<div class="flex">
+		<div class="score-item flex-row">
 			<label>Misses</label>
 			<span class="value">{{misses}}</span>
 		</div>
-		<div class="flex">
+		<div class="score-item flex-row">
 			<label>Percent</label>
 			<span class="value">{{percent}}</span>
 		</div>
@@ -34,26 +34,12 @@
 </script>
 
 <style>
-.flex {
-	display: flex;
-	flex-direction: row;
-	justify-content: center;
-	align-items: center;
-}
-.flex-center {
-	flex: 1;
-}
 .instrument {
 	font-size: 1rem;
 }
 
-.flex > div {
-	border-left: 2px solid white;
+.score-item {
 	padding: 0 0.5rem;
-}
-
-.flex > div:first-child {
-	border-left: unset;
 }
 
 #score {
@@ -63,6 +49,11 @@
 	background-color: #00c895;
 	width: 100vw;
 	z-index: 11;
+	height: 10vh;
+}
+
+#score img {
+	height: 8vh;
 }
 
 label {

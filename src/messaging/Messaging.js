@@ -2,14 +2,14 @@ import solace from "../lib/solclient.js";
 
 export default class Messaging {
 
-	constructor(opts) {
+	constructor() {
+		this.events = {};
 		this.solace = solace;
 		this.isConnected = false;
 		this.WILDCARD = "*"; // Wildcard for topic subscriptions in SMF
 		this.msgId = 1;
 		this.myId = Math.random().toString().substr(2);
 
-		this.callbacks = opts.callbacks;
 		this.pendingReplies = {};
 
 		this.sessionProps = {
@@ -39,7 +39,29 @@ export default class Messaging {
 		this.client.on(this.solace.SessionEventCode.MESSAGE, (message) => {
 			this._processRxMessage(message.getDestination().getName(), message.getBinaryAttachment());
 		});
+	}
 
+	on(event, listener) {
+		if (typeof this.events[event] !== 'object') {
+			this.events[event] = [];
+		}
+		this.events[event].push(listener);
+	}
+
+	emit(event) {
+		var i, listeners, length, args = [].slice.call(arguments, 1);
+
+		if (typeof this.events[event] === 'object') {
+			listeners = this.events[event].slice();
+			length = listeners.length;
+
+			for (i = 0; i < length; i++) {
+				listeners[i].apply(this, args);
+			}
+		}
+	};
+
+	connect() {
 		this.client.connect();
 	}
 
@@ -131,6 +153,34 @@ export default class Messaging {
 		this._publishText(topic, JSON.stringify(txMsg));
 	}
 
+	sendMessageAsync(topic, message, timeout = 60000) {
+		let txMsg = Object.assign({}, message);
+		txMsg.client_id		= this.myId;
+		txMsg.current_time = this.getTime();
+
+		if (!txMsg.msg_id) {
+			txMsg.msg_id = this.msgId++;
+		}
+
+		if (!this.isConnected) {
+			console.error("Not yet connected");
+			return;
+		}
+
+		return new Promise((resolve, reject) => {
+			this._publishText(topic, JSON.stringify(txMsg));
+			this.pendingReplies[txMsg.msg_id] = {
+				txMessage: txMsg,
+				resolve: resolve,
+				timer: setTimeout(() => {
+					clearTimeout(this.pendingReplies[txMsg.msg_id].timer);
+					delete this.pendingReplies[txMsg.msg_id];
+					reject("Timed out waiting for response");
+				}, timeout)
+			};
+		});
+	}
+
 	_publishText(topic, text) {
 		var message = solace.SolclientFactory.createMessage();
 		message.setDestination(solace.SolclientFactory.createTopicDestination(topic));
@@ -177,9 +227,10 @@ export default class Messaging {
 		this.isConnected = true;
 		this.subscribe(`orchestra/p2p/${this.myId}`);
 		this.subscribe(`orchestra/broadcast`);
-		if (this.callbacks.connected) {
-			this.callbacks.connected();
-		}
+		this.emit("connected");
+		// if (this.callbacks.connected) {
+		// 	this.callbacks.connected();
+		// }
 	}
 
 	_processRxMessage(topic, messageText) {
@@ -204,6 +255,7 @@ export default class Messaging {
 		if (msgType === "ping") {
 			this.sendResponse(message, {});
 		} else if (msgType === "start_song") {
+			console.log("Start Time 1");
 			// start time sync first, passing the start-song trigger topic and message
 			this.syncRetries = 5;	 // sync time sample size
 			this.lowestLat = 500; // lowest latency starting point
@@ -212,13 +264,13 @@ export default class Messaging {
 		} else if (msgType.endsWith("_response") && this.pendingReplies[msgId]) {
 			let info = this.pendingReplies[msgId];
 			clearTimeout(info.timer);
-			info.callback(info.txMessage, message);
+			console.log("Resolve", info.txMessage, message);
+			info.resolve({
+				request: info.txMessage,
+				reply: message
+			});
 		} else {
-			if (this.callbacks[msgType]) {
-				this.callbacks[msgType](topic, message);
-			} else {
-				console.log("Unhandled message. Message type: ", msgType, topic, "Full message:", message);
-			}
+			this.emit(msgType, topic, message);
 		}
 
 	}
@@ -227,8 +279,8 @@ export default class Messaging {
 		const pingMessage = {
 			msg_type: 'ping'
 		};
-		this.sendMessage(startSongMessage.time_server_topic, pingMessage, (txMessage, rxMessage) => {
-			this._handleTimeResponse(txMessage, rxMessage, startSongTopic, startSongMessage);
+		this.sendMessageAsync(startSongMessage.time_server_topic, pingMessage).then((response) => {
+			this._handleTimeResponse(response.request, response.reply, startSongTopic, startSongMessage);
 		});
 	}
 
@@ -244,9 +296,7 @@ export default class Messaging {
 		if (--this.syncRetries > 0) {
 				this._sendTimeRequest(startSongTopic, startSongMessage);
 		} else {
-			if (this.callbacks.start_song) {
-				this.callbacks.start_song(startSongTopic, startSongMessage);
-			}
+			this.emit("start_song", startSongTopic, startSongMessage);
 		}
 	}
 }
