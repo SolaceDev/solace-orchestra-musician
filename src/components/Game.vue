@@ -10,7 +10,7 @@
 			</div>
 		</div>
 		<div class="buttons flex-row">
-			<v-touch class="flex-center button-space" v-for="button in buttons" :key="button.index" v-on:tap="buttonClicked(button)"></v-touch>
+			 <v-touch class="flex-center button-space" v-for="button in buttons" :key="button.index" v-on:tap="buttonClicked(button)"></v-touch>
 		</div>
 		<score-board :hits="hits" :misses="misses" style="position: absolute; right: 0; top: 0px;"></score-board>
 	</section>
@@ -20,10 +20,6 @@
 import ScoreBoard from "./ScoreBoard.vue";
 
 export default {
-
-	// Knobs for difficulty
-	hitThreshold: 200,
-	200: 200,
 
 	components: {
 		ScoreBoard
@@ -81,7 +77,7 @@ export default {
 			channelId: 0,
 			musicianName: 'kevin',
 			enabled: true,
-			scoreUpdater: null
+			scoreUpdater: null,
 		};
 	},
 
@@ -107,7 +103,6 @@ export default {
 			notes.push(note);
 			setTimeout(() => {
 				note.hide = "hide";
-				console.log("NOW!");
 			}, 1500);
 			setTimeout(() => {
 				if (note.hit) {
@@ -129,7 +124,6 @@ export default {
 
 				// Go over each received note
 				song.note_list.forEach(noteMessage => {
-					console.log(noteMessage);
 
 					// Add the slider 1.5 seconds ahead of time
 					let currentTime = Date.now() + timeOffset;
@@ -137,44 +131,35 @@ export default {
 					var timeoutSeconds = noteMessage.play_time - currentTime - (this.sliderTimeSecs * 1000) - latencyToSymphony;
 
 					// If the note isn't too close to the last note, add it
-					if (songName === 'super-mario-underwater-nintendo-piano-level-6' || (timeoutSeconds > 0 && (timeoutSeconds - lastTime) > 200)) {
-						// if (timeoutSeconds === lastTime) {
-						// 	// single note at a time only
-						// 	return;
-						// }
-						lastTime = timeoutSeconds;
-						let noteType = noteMessage.note % 12;
-						if (songName === 'super-mario-underwater-nintendo-piano-level-6') {
-							if (highChannel && noteMessage.note <= 60) {
-								console.log("Dropping ", noteMessage.note);
-								return;
-							} else if (!highChannel && noteMessage.note > 60) {
-								console.log("Dropping ", noteMessage.note);
-								return;
-							}
+					let noteType = noteMessage.note % 12;
+					if (songName === 'Super Mario Underwater Level') {
+						if (highChannel && noteMessage.note <= 60) {
+							return;
+						} else if (!highChannel && noteMessage.note > 60) {
+							return;
 						}
-						let track = 0;
-						if (noteType === 0 || noteType === 1) {
-							track = 0; // C, C# map to first track
-						} else if (noteType === 2 || noteType === 3) {
-							track = 1; // D, D# map to seond track
-						} else if (noteType === 4) {
-							track = 2; // E maps to third track
-						} else if (noteType === 5 || noteType == 6) {
-							track = 3; // F, F# map to fourth track
-						} else if (noteType === 7 || noteType == 8) {
-							track = 4; // G, G# map to fifth track
-						} else if (noteType === 9 || noteType == 10) {
-							track = 5; // A, A# map to sixth track
-						} else if (noteType === 11) {
-							track = 6; // B maps to seventh track
-						}
-						let realTime = noteMessage.play_time;
-						this.sliderTimeouts.push(setTimeout(() => {
-							this.addNote(noteMessage.note_id, track, noteMessage, realTime - 300, realTime + 300);
-						}, timeoutSeconds));
-
 					}
+					let track = 0;
+					if (noteType === 0 || noteType === 1) {
+						track = 0; // C, C# map to first track
+					} else if (noteType === 2 || noteType === 3) {
+						track = 1; // D, D# map to seond track
+					} else if (noteType === 4) {
+						track = 2; // E maps to third track
+					} else if (noteType === 5 || noteType == 6) {
+						track = 3; // F, F# map to fourth track
+					} else if (noteType === 7 || noteType == 8) {
+						track = 4; // G, G# map to fifth track
+					} else if (noteType === 9 || noteType == 10) {
+						track = 5; // A, A# map to sixth track
+					} else if (noteType === 11) {
+						track = 6; // B maps to seventh track
+					}
+					let realTime = noteMessage.play_time;
+					this.sliderTimeouts.push(setTimeout(() => {
+						this.addNote(noteMessage.note_id, track, noteMessage, realTime - 300, realTime + 300);
+					}, timeoutSeconds));
+
 				});
 			}
 		},
@@ -197,7 +182,7 @@ export default {
 <style>
 .game {
 	background: url(../../static/bg.png) no-repeat;
-	background-size: 100% auto;
+	background-size: 100% 100%;
 	height: 100vh;
 	width: 100vw;
 }
@@ -224,7 +209,7 @@ export default {
 
 .lines {
 	width: 60vw;
-	height: 100vh;
+	height: 95vh;
 	position: relative;
 	transform: rotateX(70deg);
 	display: flex;

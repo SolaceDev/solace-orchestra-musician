@@ -1,5 +1,5 @@
 <template>
-	<section>
+	<section id="solace">
 		<welcome v-if="!loggedIn" :name.sync="name" @connect-pressed="connect"></welcome>
 		<game v-if="loggedIn" @note-played="playNote" ref="game" :hits.sync="hits" :misses.sync="misses"></game>
 	</section>
@@ -18,7 +18,6 @@ export default {
 	},
 
 	data() {
-		console.log("data")
 		return {
 			name: null,
 			loggedIn: false,
@@ -30,13 +29,13 @@ export default {
 			selectedInstrument: {
 				value: 0
 			},
-			channelId: 0
+			channelId: 0,
+			timeOffset: 0
 		};
 	},
 
 	created() {
 		this.messaging = new Messaging();
-		console.log("created");
 		this.messaging.on("connected", this.connected.bind(this));
 		this.messaging.on("start_song", this.startSong.bind(this));
 		this.messaging.on("stop_song", this.stopSong.bind(this));
@@ -49,15 +48,13 @@ export default {
 	},
 
 	mounted() {
-		console.log("mounted")
-	},
-
-	update() {
-		console.log("update")
+		document.getElementById("solace").addEventListener("touchmove", event => {
+			event.preventDefault();
+		});
+		window.scrollTo(0, 1);
 	},
 
 	destroyed() {
-		console.log("destroy")
 		this.messaging.disconnect();
 	},
 
@@ -81,7 +78,6 @@ export default {
 				name: musicianName
 			};
 			this.messaging.sendMessageAsync(publisherTopic, messageJson).then(() => {
-				console.log("Musician Registered");
 				this.loggedIn = true;
 			});
 		},
@@ -90,11 +86,10 @@ export default {
 			this.misses = 0;
 		},
 		receiveMusicScore: function(topic, message) {
-			var timeOffset = this.messaging.getTimeOffset();
-			this.$refs.game.playSong(message, timeOffset, this.songName);
+			this.timeOffset = this.messaging.getTimeOffset();
+			this.$refs.game.playSong(message, this.timeOffset, this.songName);
 		},
 		startSong: function(topic, message) {
-			console.log("Start song ", topic, message);
 			this.resetScore();
 			this.channelId = message.channel_id;
 			var subscriberTopic = `orchestra/theatre/default/${this.channelId}`;
@@ -136,7 +131,7 @@ export default {
 			this.channelId = "0";
 		},
 		playNote: function(button) {
-			let currentTime = Date.now();
+			var timeNow = new Date().getTime() + this.timeOffset;
 			if (!this.messaging || !this.enabled) {
 				console.log("no play", this.messaging, this.enabled);
 				return;
@@ -147,14 +142,22 @@ export default {
 					this.misses++;
 					return;
 				}
-				if (currentTime > nextNote.minTime && currentTime < nextNote.maxTime) {
+				if (timeNow > nextNote.minTime && timeNow < nextNote.maxTime) {
 					nextNote.hit = true;
 					button.notes.shift();
+					return;
 				}
-				return;
+				let message = {
+					current_time: timeNow,
+					msg_type: 'play_note',
+					note: nextNote.message.note_id,
+					time_offset: 0
+				};
+				var publisherTopic = `orchestra/theatre/default/${this.channelId}`;
+				this.messaging.sendMessage(publisherTopic, message);
 			}
 			let message = {
-				current_time: currentTime,
+				current_time: timeNow,
 				msg_type: 'note',
 				note_list: [
 					{
@@ -162,7 +165,7 @@ export default {
 						note: button.value,
 						channel: 0,
 						duration: 750,
-						play_time: currentTime
+						play_time: timeNow
 					}
 				]
 			};
@@ -173,7 +176,6 @@ export default {
 			this.enabled = true;
 		},
 		disableMusician: function() {
-			console.log("disbaled");
 			this.enabled = false;
 		},
 		registerResponse: function() {
@@ -182,7 +184,6 @@ export default {
 		reregister: function() {
 			this.loggedIn = false;
 			this.registerMusician(this.name);
-			console.log("reregister")
 		},
 		sendScoreMessage: function() {
 			let notes = this.hits + this.misses;

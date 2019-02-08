@@ -62,13 +62,13 @@
 .welcome {
 	background: #121716;
 	color: white;
-	height: 100vh;
+	height: 90vh;
 }
 .logo {
-	height: 20vh;
+	height: 18vh;
 }
 .instruments {
-	height: 60vh;
+	height: 50vh;
 	border: solid 1px black;
 	border-radius: 4px;
 	background: rgba(255, 255, 255, 0.1);
@@ -79,6 +79,7 @@
 	align-items: center;
 	justify-content: center;
 }
+
 .name {
 	width: 60vw;
 	height: 14vh;
@@ -97,16 +98,37 @@ input {
 }
 
 .instrument {
-	height: 15vh;
+	height: 13vh;
 	width: 30vw;
 	display: flex;
 	align-items: center;
 }
 
 .instrument img {
-	height: 13vh;
+	height: 9vh;
 	padding: 1vh 1vw;
 	display: block;
+}
+
+/* Change sizes for portrait mode */
+@media only screen and (max-width: 600px)  {
+	.instruments {
+		width: 95vw;
+	}
+	.instrument {
+		width: 47.5vw;
+	}
+	.logo {
+		height: auto;
+		width: 95vw;
+	}
+	input {
+		font-size: 3vh;
+		width: 95vw;
+	}
+	.name {
+		width: 95vw;
+	}
 }
 
 </style>
