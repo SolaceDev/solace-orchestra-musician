@@ -1,4 +1,5 @@
 import solace from "../lib/solclient.js";
+import properties from "../solace-cloud.js";
 
 export default class Messaging {
 
@@ -12,19 +13,12 @@ export default class Messaging {
 
 		this.pendingReplies = {};
 
-		this.sessionProps = {
-			url: "wss://mrlq2f85angxr.messaging.solace.cloud:443",
-			vpnName: "msgvpn-lq2f85angx7",
-			userName: "solace-cloud-client",
-			password: "j63bfrgm2i0v309bee9s62o093"
-		};
-
 		var factoryProps = new this.solace.SolclientFactoryProperties();
 		factoryProps.profile = this.solace.SolclientFactoryProfiles.version10;
 		this.solace.SolclientFactory.init(factoryProps);
 
 		try {
-			this.client = this.solace.SolclientFactory.createSession( this.sessionProps );
+			this.client = this.solace.SolclientFactory.createSession(properties);
 		} catch (error) {
 			console.log(error);
 			throw error;

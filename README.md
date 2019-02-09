@@ -2,6 +2,8 @@
 
 > The client application used to act as a musician with Solace Orchestra
 
+> To run, add your Solace Cloud credentials to the solace-cloud.js file.
+
 ## Build Setup
 
 ``` bash
